@@ -10,6 +10,8 @@ const path = require("path");
 
 const app = express();
 
+const PORT = process.env.PORT || 5001;
+
 // CORS middleware should come before body parser
 app.use("/", (req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -67,4 +69,4 @@ app.use((error, req, res, next) => {
   }
 });
 
-app.listen(5001);
+app.listen(PORT);
