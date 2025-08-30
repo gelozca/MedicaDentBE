@@ -13,16 +13,12 @@ const checkAuth = require("../middleware/check-auth");
 const { check } = require("express-validator");
 const fileUpload = require("../middleware/file-upload");
 
-router.use(checkAuth);
 
-router.get("/", getAllPacientes);
 
 router.get("/datos-contacto", [
   check("num_telefono").not().isEmpty().withMessage("Telefono es requerido"),
   check("correo").isEmail().withMessage("Correo invalido")
 ], getDatosContacto);
-
-router.get("/:id", [check("id").isUUID().withMessage("ID invalido")], getPacienteById);
 
 router.post("/", [
   check("nombre").not().isEmpty().withMessage("Nombre es requerido"),
@@ -34,6 +30,16 @@ router.post("/", [
   check("correo").isEmail().withMessage("Correo invalido")
   
 ], createPaciente);
+
+router.use(checkAuth);
+
+router.get("/", getAllPacientes);
+
+
+
+router.get("/:id", [check("id").isUUID().withMessage("ID invalido")], getPacienteById);
+
+
 
 router.patch("/:id",[
   check("id").isUUID().withMessage("ID invalido"),

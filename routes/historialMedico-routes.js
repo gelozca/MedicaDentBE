@@ -5,8 +5,6 @@ const { check } = require("express-validator");
 const { getHistorialMedicoById, updateHistorialMedicoById } = require("../controllers/historialMedico-controller");
 
 
-router.use(checkAuth);
-
 router.get("/:id", check("id").isUUID().withMessage("ID invalido"), getHistorialMedicoById);
 router.patch("/:id", check("id").isUUID().withMessage("ID invalido"), updateHistorialMedicoById);
 

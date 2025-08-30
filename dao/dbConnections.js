@@ -1,24 +1,12 @@
 const { Pool } = require("pg");
 require("dotenv").config();
 
-let pool;
-
-if (process.env.DATABASE_URL) {
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-  });
-} else {
-  pool = new Pool({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-  });
-}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false, // required for Render’s managed Postgres
+  },
+});
 
 pool
   .connect()
@@ -26,16 +14,16 @@ pool
     return client
       .query("SELECT 1")
       .then(() => {
-        console.log("Conectado a la base de datos");
+        console.log("✅ Conectado a la base de datos en Render");
         client.release();
       })
       .catch((err) => {
         client.release();
-        console.error(" Error al hacer consulta de prueba", err.stack);
+        console.error("❌ Error al hacer consulta de prueba", err.stack);
       });
   })
   .catch((err) => {
-    console.error("Error al conectar a la base de datos", err.stack);
+    console.error("❌ Error al conectar a la base de datos", err.stack);
   });
 
 module.exports = pool;
