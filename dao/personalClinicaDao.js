@@ -46,7 +46,7 @@ const createPersonalClinicaDao = async (personalClinica) => {
 
     const passwordHash = await bcrypt.hash(password_hash, 10);
 
-    console.log(personalClinica);
+    
 
     const result = await pool.query(
       `SELECT * FROM crear_usuario_personal_clinica(
@@ -132,6 +132,23 @@ const getPersonalClinicaByRolIdDao = async (rol_id) => {
   }
 };
 
+const getPersonalClinicaByUsuarioIdDao = async (usuario_id) => {
+  try {
+    
+    const result = await pool.query("SELECT * FROM personal_clinica WHERE usuario_id = $1", [usuario_id]);
+    
+    if (result.rows.length === 0) {
+      return null;     
+    }
+    return result.rows[0];
+    
+  } catch (error) {
+    console.error("Error al obtener el personal de la clínica por usuario_id", error);
+    throw error;
+  }
+};
+
+
 const getPersonalClinicaByUsernameDao = async (username) => {
   try {
     const result = await pool.query("SELECT * FROM personal_clinica WHERE username = $1", [username]);
@@ -149,4 +166,6 @@ module.exports = {
   getPersonalClinicaByEmailDao,
   getPersonalClinicaByTelefonoDao,
   getPersonalClinicaByRolIdDao,
+  getPersonalClinicaByUsuarioIdDao,
+  getPersonalClinicaByUsernameDao,
 };

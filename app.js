@@ -5,6 +5,8 @@ const usuariosLoginRoutes = require("./routes/usuariosLogin-routes");
 const historialMedicoRoutes = require("./routes/historialMedico-routes");
 const personalClinicaRoutes = require("./routes/personalClinica-routes");
 const HttpError = require("./models/http-error");
+const autoRegisterRoutes = require("./routes/autoregister-route");
+
 const fs = require("fs");
 const path = require("path");
 
@@ -43,6 +45,8 @@ app.use("/usuarios", usuariosLoginRoutes);
 app.use("/historial-medico", historialMedicoRoutes);
 
 app.use("/personal-clinica", personalClinicaRoutes);
+
+app.use("/registro-paciente", autoRegisterRoutes);
 
 app.use((req, res, next) => {
   const error = new HttpError("No se encontro la ruta", 404);

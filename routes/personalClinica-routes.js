@@ -8,6 +8,7 @@ const {
   createPersonalClinica,
   getPersonalClinicaByRolId,
   getPersonalClinicaExistente,
+  getPersonalClinicaByUsuarioId
 } = require("../controllers/personalClinica-controller");
 
 router.use(checkAuth);
@@ -16,6 +17,8 @@ router.get("/", getPersonalClinica);
 router.get("/personal-existente", getPersonalClinicaExistente);
 router.get("/:id", getPersonalClinicaById);
 router.get("/rol-id/:id", getPersonalClinicaByRolId);
+router.get("/usuario/:id", getPersonalClinicaByUsuarioId);
+
 
 router.post("/", createPersonalClinica);
 

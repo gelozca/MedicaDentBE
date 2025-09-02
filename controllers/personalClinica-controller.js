@@ -8,8 +8,9 @@ const {
   getPersonalClinicaByEmailDao,
   getPersonalClinicaByTelefonoDao,
   getPersonalClinicaByRolIdDao,
+  getPersonalClinicaByUsuarioIdDao,
 } = require("../dao/personalClinicaDao");
-const { getUsuarioByUsername, getUsuarioById } = require("../dao/usuariosDao");
+const { getUsuarioByUsername } = require("../dao/usuariosDao");
 
 const getPersonalClinica = async (req, res, next) => {
   try {
@@ -34,6 +35,21 @@ const getPersonalClinicaById = async (req, res, next) => {
   }
 };
 
+const getPersonalClinicaByUsuarioId = async (req, res, next) => {
+  try {
+    const personalClinica = await getPersonalClinicaByUsuarioIdDao(req.params.id);
+    if (!personalClinica) {
+      return next(
+        new HttpError("No se encontro el personal de la clínica", 404)
+      );
+    }
+    res.json(personalClinica);
+  } catch (error) {
+    return next(
+      new HttpError("Error al obtener el personal de la clínica", 500)
+    );
+  }
+};
 const createPersonalClinica = async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -112,4 +128,5 @@ module.exports = {
   createPersonalClinica,
   getPersonalClinicaByRolId,
   getPersonalClinicaExistente,
+  getPersonalClinicaByUsuarioId,
 };
