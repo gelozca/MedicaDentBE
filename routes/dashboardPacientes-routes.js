@@ -11,7 +11,7 @@ const {
 } = require("../controllers/pacientes-controller");
 const checkAuth = require("../middleware/check-auth");
 const { check } = require("express-validator");
-const fileUpload = require("../middleware/file-upload");
+const { fileUpload, addS3Key } = require("../middleware/file-upload");
 
 
 
@@ -50,9 +50,9 @@ router.patch("/:id",[
   check("correo").isEmail().withMessage("Correo invalido")
 ], updatePacienteById);
 
-router.patch("/:id/fotoPerfil", fileUpload.single("fotoPerfil"), [
+router.patch("/:id/fotoPerfil", [
   check("id").isUUID().withMessage("ID invalido"),
-], updateFotoPerfilPacienteById);
+], fileUpload.single("fotoPerfil"), addS3Key, updateFotoPerfilPacienteById);
 
 
 router.delete("/:id", deletePacienteById);

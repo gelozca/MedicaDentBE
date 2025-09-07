@@ -13,11 +13,40 @@ const {
   getPacienteByEmailDao,
   getPacienteByTelefonoDao,
 } = require("../dao/pacientesDao");
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
+const { s3, generateProfilePictureUrl } = require("../config/s3");
+const bucketName = process.env.AWS_S3_BUCKET;
+
+// Helper function to generate public URL for patient photo
+const generatePatientPhotoUrl = (paciente) => {
+  if (paciente.foto_perfil_url) {
+    try {
+      const publicUrl = generateProfilePictureUrl(paciente.foto_perfil_url);
+      return {
+        ...paciente,
+        foto_perfil_url: publicUrl
+      };
+    } catch (error) {
+      console.error("Error generating public URL for patient photo:", error);
+      return {
+        ...paciente,
+        foto_perfil_url: null
+      };
+    }
+  }
+  return paciente;
+};
+
+// Helper function to generate public URLs for multiple patients
+const generatePatientsPhotoUrls = (pacientes) => {
+  return pacientes.map(paciente => generatePatientPhotoUrl(paciente));
+};
 
 const getAllPacientes = async (req, res, next) => {
   try {
     const pacientes = await getAllPacientesDao();
-    res.json(pacientes);
+    const pacientesWithPublicUrls = generatePatientsPhotoUrls(pacientes);
+    res.json(pacientesWithPublicUrls);
   } catch (error) {
     return next(new HttpError("Error al obtener los pacientes", 500));
   }
@@ -29,16 +58,26 @@ const getPacienteById = async (req, res, next) => {
     if (!paciente) {
       return next(new HttpError("Paciente no encontrado", 404));
     }
-    res.json(paciente);
+    const pacienteWithPublicUrl = generatePatientPhotoUrl(paciente);
+    res.json(pacienteWithPublicUrl);
   } catch (error) {
     return next(new HttpError("Error al obtener el paciente", 500));
   }
 };
 
 const createPaciente = async (req, res, next) => {
-  const { nombre, apellido_paterno, apellido_materno, sexo, fecha_nacimiento, correo, num_telefono, direccion, ocupacion} =
-    req.body;
-  try {    
+  const {
+    nombre,
+    apellido_paterno,
+    apellido_materno,
+    sexo,
+    fecha_nacimiento,
+    correo,
+    num_telefono,
+    direccion,
+    ocupacion,
+  } = req.body;
+  try {
     const paciente = await createPacienteDao(req.body);
     const response = {
       id: paciente.id,
@@ -46,7 +85,7 @@ const createPaciente = async (req, res, next) => {
       apellido_paterno: paciente.apellido_paterno,
       apellido_materno: paciente.apellido_materno,
       correo: paciente.correo,
-      num_telefono: paciente.num_telefono      
+      num_telefono: paciente.num_telefono,
     };
     res.status(201).json(response);
   } catch (error) {
@@ -62,8 +101,7 @@ const updatePacienteById = async (req, res, next) => {
   }
 
   const { id } = req.params;
-  
-  
+
   const {
     nombre,
     apellido_paterno,
@@ -79,30 +117,31 @@ const updatePacienteById = async (req, res, next) => {
     ocupacion,
   } = req.body;
 
-  
-
   try {
     const pacienteExistente = await getPacienteByIdDao(id);
     if (!pacienteExistente) {
       return next(new HttpError("Paciente no encontrado", 404));
     }
 
-    if(pacienteExistente.correo !== correo) {
+    if (pacienteExistente.correo !== correo) {
       const pacienteExistenteCorreo = await getPacienteByEmailDao(correo);
       if (pacienteExistenteCorreo) {
         return next(new HttpError("Paciente con este correo ya existe", 422));
       }
     }
 
-    if(pacienteExistente.num_telefono !== num_telefono) {
-      const pacienteExistenteTelefono = await getPacienteByTelefonoDao(num_telefono);
+    if (pacienteExistente.num_telefono !== num_telefono) {
+      const pacienteExistenteTelefono = await getPacienteByTelefonoDao(
+        num_telefono
+      );
       if (pacienteExistenteTelefono) {
         return next(new HttpError("Paciente con este telefono ya existe", 422));
       }
     }
 
     const paciente = await updatePacienteByIdDao(id, req.body);
-    res.status(200).json(paciente);
+    const pacienteWithPublicUrl = generatePatientPhotoUrl(paciente);
+    res.status(200).json(pacienteWithPublicUrl);
   } catch (error) {
     return next(new HttpError("Error al actualizar el paciente", 500));
   }
@@ -117,7 +156,7 @@ const deletePacienteById = async (req, res, next) => {
       return next(new HttpError("Paciente no encontrado", 404));
     }
 
-    if (pacienteExistente.foto_perfil_url) {
+    /*if (pacienteExistente.foto_perfil_url) {
       try {
         const existingPhotoPath = path.join(
           __dirname,
@@ -129,6 +168,21 @@ const deletePacienteById = async (req, res, next) => {
         }
       } catch (deleteError) {
         console.error("Error deleting existing profile photo:", deleteError);
+      }
+    }*/
+
+    if (pacienteExistente.foto_perfil_url) {
+      // foto_perfil_url now contains the S3 key directly
+      const oldKey = pacienteExistente.foto_perfil_url;
+      try {
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: bucketName,
+            Key: oldKey,
+          })
+        );
+      } catch (deleteError) {
+        console.error("Error deleting profile photo from S3:", deleteError);
       }
     }
 
@@ -148,13 +202,18 @@ const updateFotoPerfilPacienteById = async (req, res, next) => {
 
   const { id } = req.params;
 
+  // Check if file was uploaded
+  if (!req.file) {
+    return next(new HttpError("No se proporcionó archivo de imagen", 400));
+  }
+
   try {
-    const pacienteExistente = await getPacienteByIdDao(id);
+    const pacienteExistente = await getPacienteByIdDao(id);    
     if (!pacienteExistente) {
       return next(new HttpError("Paciente no encontrado", 404));
     }
 
-    if (pacienteExistente.foto_perfil_url) {
+    /*if (pacienteExistente.foto_perfil_url) {
       try {
         const existingPhotoPath = path.join(
           __dirname,
@@ -167,12 +226,29 @@ const updateFotoPerfilPacienteById = async (req, res, next) => {
       } catch (deleteError) {
         console.error("Error deleting existing profile photo:", deleteError);
       }
+    }*/
+
+    if (pacienteExistente.foto_perfil_url) {
+      // foto_perfil_url now contains the S3 key directly
+      const oldKey = pacienteExistente.foto_perfil_url;
+      try {
+        await s3.send(
+          new DeleteObjectCommand({
+            Bucket: bucketName,
+            Key: oldKey,
+          })
+        );
+      } catch (deleteError) {
+        console.error("Error deleting old profile photo from S3:", deleteError);
+      }
     }
 
-    const fotoPerfilUrl = req.file.path;
+    // Store the S3 key instead of the full URL
+    const fotoPerfilKey = req.file.s3Key;
 
-    const paciente = await updateFotoPerfilPacienteByIdDao(id, fotoPerfilUrl);
-    res.status(200).json(paciente);
+    const paciente = await updateFotoPerfilPacienteByIdDao(id, fotoPerfilKey);
+    const pacienteWithPublicUrl = generatePatientPhotoUrl(paciente);
+    res.status(200).json(pacienteWithPublicUrl);
   } catch (error) {
     return next(
       new HttpError("Error al actualizar la foto de perfil del paciente", 500)

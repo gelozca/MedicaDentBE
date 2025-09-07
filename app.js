@@ -25,7 +25,16 @@ app.use("/", (req, res, next) => {
   next();
 });
 
-app.use(bodyParser.json());
+// Only parse JSON for non-multipart requests
+app.use((req, res, next) => {
+  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+    // Skip body parsing for multipart requests - let multer handle it
+    next();
+  } else {
+    // Parse JSON for other requests
+    bodyParser.json()(req, res, next);
+  }
+});
 
 // Debug middleware to log request body
 app.use((req, res, next) => {
