@@ -6,6 +6,7 @@ const historialMedicoRoutes = require("./routes/historialMedico-routes");
 const personalClinicaRoutes = require("./routes/personalClinica-routes");
 const HttpError = require("./models/http-error");
 const autoRegisterRoutes = require("./routes/autoregister-route");
+const odontogramaRoutes = require("./routes/odontograma-route");
 
 const fs = require("fs");
 const path = require("path");
@@ -25,22 +26,21 @@ app.use("/", (req, res, next) => {
   next();
 });
 
-// Only parse JSON for non-multipart requests
 app.use((req, res, next) => {
-  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
-    // Skip body parsing for multipart requests - let multer handle it
+  if (
+    req.headers["content-type"] &&
+    req.headers["content-type"].includes("multipart/form-data")
+  ) {
     next();
   } else {
-    // Parse JSON for other requests
     bodyParser.json()(req, res, next);
   }
 });
 
-// Debug middleware to log request body
 app.use((req, res, next) => {
-  if (req.method === 'PATCH' && req.path.includes('/pacientes/')) {
-    console.log('Request body in middleware:', req.body);
-    console.log('Content-Type:', req.headers['content-type']);
+  if (req.method === "PATCH" && req.path.includes("/pacientes/")) {
+    console.log("Request body in middleware:", req.body);
+    console.log("Content-Type:", req.headers["content-type"]);
   }
   next();
 });
@@ -56,6 +56,8 @@ app.use("/historial-medico", historialMedicoRoutes);
 app.use("/personal-clinica", personalClinicaRoutes);
 
 app.use("/registro-paciente", autoRegisterRoutes);
+
+app.use("/odontograma", odontogramaRoutes);
 
 app.use((req, res, next) => {
   const error = new HttpError("No se encontro la ruta", 404);
