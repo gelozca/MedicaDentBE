@@ -7,8 +7,7 @@ const {
   createOdontogramaDiente,
   getOdontogramaDienteByOdontogramaId,
   updateOdontogramaDienteById,
-  deleteOdontogramaDienteById,
-  deleteOdontogramaByPacienteId,
+  deleteOdontogramaById,
   getDienteById,
 } = require("../controllers/odontograma-controller");
 
@@ -28,8 +27,6 @@ router.get("/dientes/:id/diente", getDienteById);
 
 router.patch("/dientes/diente/:id", updateOdontogramaDienteById);
 
-//router.delete("/dientes/:id", deleteOdontogramaDienteById);
-
-//router.delete("/:id", deleteOdontogramaByPacienteId);
+router.delete("/:id", deleteOdontogramaById);
 
 module.exports = router;

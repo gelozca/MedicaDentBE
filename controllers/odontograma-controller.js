@@ -9,8 +9,7 @@ const {
   createOdontogramaDienteDao,
   getOdontogramaDienteByOdontogramaIdDao,
   updateOdontogramaDienteByIdDao,
-  deleteOdontogramaDienteByIdDao,
-  deleteOdontogramaByPacienteIdDao,
+  deleteOdontogramaByIdDao,
   getDienteByIdDao,
 } = require("../dao/odontogramaDao");
 
@@ -91,43 +90,20 @@ const updateOdontogramaDienteById = async (req, res, next) => {
   }
 };
 
-const deleteOdontogramaDienteById = async (req, res, next) => {
+const deleteOdontogramaById = async (req, res, next) => {
   try {
-    const diente = await deleteOdontogramaDienteByIdDao(req.params.id);
+    const odontograma = await deleteOdontogramaByIdDao(req.params.id);
 
-    if (!diente) {
+    if (!odontograma) {
       return res.status(404).json({
-        message: "No se encontró el diente del odontograma para eliminar",
-      });
-    }
-
-    res.json({
-      message: "Diente del odontograma eliminado exitosamente",
-      deletedDiente: diente,
-    });
-  } catch (error) {
-    return next(
-      new HttpError("Error al eliminar el diente del odontograma", 500)
-    );
-  }
-};
-
-const deleteOdontogramaByPacienteId = async (req, res, next) => {
-  try {
-    const odontogramas = await deleteOdontogramaByPacienteIdDao(req.params.id);
-
-    if (!odontogramas || odontogramas.length === 0) {
-      return res.status(404).json({
-        message:
-          "No se encontraron odontogramas para eliminar para este paciente",
+        message: "No se encontró el odontograma para eliminar",
         deletedCount: 0,
       });
     }
 
     res.json({
-      message: "Odontogramas eliminados exitosamente",
-      deletedCount: odontogramas.length,
-      deletedOdontogramas: odontogramas,
+      message: "Odontograma eliminado exitosamente",      
+      deletedOdontograma: odontograma,
     });
   } catch (error) {
     return next(new HttpError("Error al eliminar el odontograma", 500));
@@ -153,9 +129,8 @@ module.exports = {
   createOdontograma,
   getOdontogramaByPacienteId,
   updateOdontogramaDienteById,
-  deleteOdontogramaDienteById,
   createOdontogramaDiente,
   getOdontogramaDienteByOdontogramaId,
-  deleteOdontogramaByPacienteId,
+  deleteOdontogramaById,
   getDienteById,
 };

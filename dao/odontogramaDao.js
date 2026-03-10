@@ -137,22 +137,17 @@ const updateOdontogramaDienteByIdDao = async (id, data) => {
   }
 };
 
-const deleteOdontogramaDienteByIdDao = async (id) => {
+const deleteOdontogramaByIdDao = async (id) => {
   try {
-    const query = "DELETE FROM odontograma_diente WHERE id = $1 RETURNING *";
+    
+    const odontograma = await findOdontogramaByIdDao(id);
+    
+    if (!odontograma) {      
+      return null;
+    }
+    const query = "DELETE FROM odontograma WHERE id = $1 RETURNING *";
     const result = await pool.query(query, [id]);
     return result.rows[0];
-  } catch (error) {
-    console.error("Error al eliminar el diente del odontograma", error);
-    throw error;
-  }
-};
-
-const deleteOdontogramaByPacienteIdDao = async (paciente_id) => {
-  try {
-    const query = "DELETE FROM odontograma WHERE paciente_id = $1 RETURNING *";
-    const result = await pool.query(query, [paciente_id]);
-    return result.rows;
   } catch (error) {
     console.error("Error al eliminar el odontograma", error);
     throw error;
@@ -178,7 +173,6 @@ module.exports = {
   getOdontogramaDienteByOdontogramaIdDao,
   getOdontogramaDienteByIdDao,
   updateOdontogramaDienteByIdDao,
-  deleteOdontogramaDienteByIdDao,
-  deleteOdontogramaByPacienteIdDao,
+  deleteOdontogramaByIdDao,
   getDienteByIdDao,
 };
