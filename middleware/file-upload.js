@@ -44,8 +44,10 @@ const fileUpload = multer({
       
       // Different folders for different types of images
       let folder = "pacientes/";
-      if (file.fieldname === 'fotoPerfil') {
+      if (file.fieldname === "fotoPerfil") {
         folder = "fotoPerfil/";
+      } else if (file.fieldname === "fotoPerfilPersonal") {
+        folder = "personalClinica/fotoPerfil/";
       } 
       
       cb(null, folder + uniqueName);

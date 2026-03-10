@@ -7,13 +7,12 @@ const {
   getUsuarios,
   createUsuarioDao,
   getUsuarioByEmail,
-  getUsuarioByUsername,
   getRoleById,
   updatePasswordDao,
 } = require("../dao/usuariosDao");
 
 const createUsuario = async (req, res, next) => {
-  const { username, email, password, rol_id } = req.body;
+  const { email, password, rol_id } = req.body;
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -23,20 +22,16 @@ const createUsuario = async (req, res, next) => {
 
   try {
     const usuarioExistente = await getUsuarioByEmail(email);
-    const usuarioExistenteUsername = await getUsuarioByUsername(username);
     const rol = await getRoleById(rol_id);
 
     if (usuarioExistente) {
-      return next(new HttpError("Usuario con este email ya existe", 422));
-    }
-    if (usuarioExistenteUsername) {
-      return next(new HttpError("Usuario con este username ya existe", 422));
+      return next(new HttpError("Usuario con este correo ya existe", 422));
     }
     if (!rol) {
       return next(new HttpError("Rol invalido", 422));
     }
 
-    const nuevoUsuario = { id: uuidv4(), username, email, password, rol_id };
+    const nuevoUsuario = { id: uuidv4(), email, password, rol_id };
     const result = await createUsuarioDao(nuevoUsuario);
 
     const token = jwt.sign(
@@ -71,13 +66,9 @@ const getAllUsuarios = async (req, res, next) => {
 const loginUsuario = async (req, res, next) => {
   const { email, password } = req.body;
 
-  let usuario = await getUsuarioByEmail(email);
+  const usuario = await getUsuarioByEmail(email);
   if (!usuario) {
-    const usuarioUsername = await getUsuarioByUsername(email.replace("@", ""));
-    if (!usuarioUsername) {
-      return next(new HttpError("Usuario o contraseña incorrectos", 401));
-    }
-    usuario = usuarioUsername;
+    return next(new HttpError("Correo o contraseña incorrectos", 401));
   }
 
   if (usuario.activo === false) {
@@ -85,7 +76,7 @@ const loginUsuario = async (req, res, next) => {
   }
   const passwordMatch = await bcrypt.compare(password, usuario.password_hash);
   if (!passwordMatch) {
-    return next(new HttpError("Usuario o contraseña incorrectos", 401));
+    return next(new HttpError("Correo o contraseña incorrectos", 401));
   }
 
   const token = jwt.sign(
@@ -106,26 +97,18 @@ const loginUsuario = async (req, res, next) => {
 };
 
 const cambiarPassword = async (req, res, next) => {
-  const { username, password } = req.body;
+  const { email, password } = req.body;
 
-  let usuario = null;
-
-  const usuarioUsername = await getUsuarioByUsername(username.replace("@", ""));
-  if (!usuarioUsername) {
-    const usuarioEmail = await getUsuarioByEmail(username);    
-    if (!usuarioEmail) {
-      return next(new HttpError("Usuario no encontrado", 404));
-    }
-    usuario = usuarioEmail;
-  } else {
-    usuario = usuarioUsername;
+  const usuario = await getUsuarioByEmail(email);
+  if (!usuario) {
+    return next(new HttpError("Correo no encontrado", 404));
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
   await updatePasswordDao(usuario.id, passwordHash);
 
   res.json({
-    message: "Password actualizado correctamente",
+    message: "Contraseña actualizada correctamente",
   });
 };
 

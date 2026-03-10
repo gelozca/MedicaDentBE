@@ -25,12 +25,11 @@ const getUsuarioById = async (id) => {
 
 const createUsuarioDao = async (usuario) => {
   try {
-    const { username, email, password, rol_id } = usuario;
+    const { email, password, rol_id } = usuario;
     const passwordHash = await bcrypt.hash(password, 10);
     const query =
-      "INSERT INTO usuarios (username, password_hash, email, rol_id, activo) VALUES ($1, $2, $3, $4, $5) RETURNING *";
+      "INSERT INTO usuarios (password_hash, email, rol_id, activo) VALUES ($1, $2, $3, $4) RETURNING *";
     const result = await pool.query(query, [
-      username,
       passwordHash,
       email,
       rol_id,
@@ -52,16 +51,6 @@ const getUsuarioByEmail = async (email) => {
     throw error;
   }
 };
-const getUsuarioByUsername = async (username) => {
-  try {
-    const query = "SELECT * FROM usuarios WHERE username = $1";
-    const result = await pool.query(query, [username]);
-    return result.rows[0];
-  } catch (error) {
-    throw error;
-  }
-};
-
 const getRoleById = async (id) => {
   try {
     const query = "SELECT * FROM roles WHERE id = $1";
@@ -89,7 +78,6 @@ module.exports = {
   getUsuarioById,
   createUsuarioDao,
   getUsuarioByEmail,
-  getUsuarioByUsername,
   getRoleById,
   updatePasswordDao,
 };

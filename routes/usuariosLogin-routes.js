@@ -24,12 +24,11 @@ router.get("/", getAllUsuarios);
 router.post(
   "/signup",
   [
-    check("email").normalizeEmail().isEmail().withMessage("Email invalido"),
+    check("email").normalizeEmail().isEmail().withMessage("Correo inválido"),
     check("password")
       .isLength({ min: 6 })
-      .withMessage("Password debe tener al menos 6 caracteres"),
-    check("username").not().isEmpty().withMessage("Username es requerido"),
-    check("rol_id").isUUID().withMessage("Rol invalido"),
+      .withMessage("La contraseña debe tener al menos 6 caracteres"),
+    check("rol_id").isUUID().withMessage("Rol inválido"),
   ],
   createUsuario
 );
