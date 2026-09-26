@@ -13,6 +13,7 @@ const {
   getPacienteByEmailDao,
   getPacienteByTelefonoDao,
 } = require("../dao/pacientesDao");
+const { getDiagnosticosByPacienteIdDao } = require("../dao/diagnosticoDao");
 const { DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { s3, generateProfilePictureUrl } = require("../config/s3");
 const bucketName = process.env.AWS_S3_BUCKET;
@@ -256,6 +257,28 @@ const updateFotoPerfilPacienteById = async (req, res, next) => {
   }
 };
 
+const LABORATORIO_ROL_ID = "e9f8a7b6-5c4d-4e3f-b2a1-0d9e8f7a6b5c";
+
+const getDiagnosticosByPacienteId = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return next(new HttpError("ID invalido", 400));
+  }
+  if (req.userData?.rol === LABORATORIO_ROL_ID) {
+    return next(new HttpError("No autorizado para ver diagnósticos", 403));
+  }
+  try {
+    const paciente = await getPacienteByIdDao(req.params.id);
+    if (!paciente) {
+      return next(new HttpError("Paciente no encontrado", 404));
+    }
+    const diagnosticos = await getDiagnosticosByPacienteIdDao(req.params.id);
+    res.json(diagnosticos);
+  } catch (error) {
+    return next(new HttpError("Error al obtener los diagnósticos", 500));
+  }
+};
+
 const getDatosContacto = async (req, res, next) => {
   const { num_telefono, correo } = req.query;
   
@@ -282,4 +305,5 @@ module.exports = {
   deletePacienteById,
   updateFotoPerfilPacienteById,
   getDatosContacto,
+  getDiagnosticosByPacienteId,
 };

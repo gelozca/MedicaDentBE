@@ -8,6 +8,7 @@ const {
   deletePacienteById,
   updateFotoPerfilPacienteById,
   getDatosContacto,
+  getDiagnosticosByPacienteId,
 } = require("../controllers/pacientes-controller");
 const checkAuth = require("../middleware/check-auth");
 const { check } = require("express-validator");
@@ -34,6 +35,12 @@ router.post("/", [
 router.use(checkAuth);
 
 router.get("/", getAllPacientes);
+
+router.get(
+  "/:id/diagnosticos",
+  [check("id").isUUID().withMessage("ID invalido")],
+  getDiagnosticosByPacienteId
+);
 
 
 
