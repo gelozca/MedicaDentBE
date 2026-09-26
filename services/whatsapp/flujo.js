@@ -12,13 +12,6 @@ const {
   etiquetaPorId,
 } = require("./conversacion");
 
-const esComando = (texto, comando) =>
-  String(texto || "")
-    .trim()
-    .toUpperCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") === comando;
-
 const mensajeError = (error) => {
   if (error.code === "config") {
     return "El servicio de voz todavía no está configurado en el servidor.";
@@ -36,7 +29,7 @@ const mensajeError = (error) => {
 };
 
 const listaPacientes = (pacientes) => {
-  const lineas = ["Encontré varios pacientes. Responde con el número:"];
+  const lineas = ["Elige al paciente. Responde con el número:"];
   pacientes.forEach((paciente, index) => {
     const nombre = paciente.apellido_paterno === undefined ? paciente.nombre : etiquetaPaciente(paciente);
     lineas.push(`${index + 1}. ${nombre}`);
@@ -44,14 +37,14 @@ const listaPacientes = (pacientes) => {
   return lineas.join("\n");
 };
 
-const pedirPaciente = async ({ telefono, doctor, borrador }) => {
+const sinPacientesParecidos = async ({ telefono, doctor, borrador }) => {
   await guardarConversacion({
     telefono,
     doctorId: doctor.id,
     estado: "identificar_paciente",
     borrador,
   });
-  return "¿De qué paciente es el diagnóstico? Escribe nombre y apellido.";
+  return "No hay pacientes parecidos.";
 };
 
 const publicarBorrador = async ({ telefono, doctor, transcripcion, diagnostico, pacienteId }) => {
@@ -110,17 +103,12 @@ const publicarBorrador = async ({ telefono, doctor, transcripcion, diagnostico, 
     return listaPacientes(pacientes);
   }
 
-  return pedirPaciente({ telefono, doctor, borrador });
+  return sinPacientesParecidos({ telefono, doctor, borrador });
 };
 
 const handleWhatsapp = async ({ telefono, doctor, body, mediaUrl, mediaType }) => {
   const texto = String(body || "").trim();
   const conversacion = await getConversacion(telefono);
-
-  if (esComando(texto, "CANCELAR")) {
-    await borrarConversacion(telefono);
-    return "Listo. No guardé el diagnóstico.";
-  }
 
   if (mediaUrl) {
     if (mediaType && !mediaType.startsWith("audio/")) {
@@ -135,14 +123,6 @@ const handleWhatsapp = async ({ telefono, doctor, body, mediaUrl, mediaType }) =
       diagnostico: await interpretDiagnosis(transcripcion),
       pacienteId: conversacion?.paciente_id || null,
     });
-  }
-
-  if (esComando(texto, "CONFIRMAR")) {
-    const resultado = await confirmarDiagnostico(telefono);
-    if (!resultado.ok) {
-      return "Todavía no hay un diagnóstico listo para guardar. Dicta la nota y elige al paciente.";
-    }
-    return "Diagnóstico guardado.";
   }
 
   if (!conversacion) {
@@ -165,10 +145,23 @@ const handleWhatsapp = async ({ telefono, doctor, body, mediaUrl, mediaType }) =
     return resumenDiagnostico(conversacion.borrador, elegido.nombre);
   }
 
+  if (conversacion.estado === "revisar" && texto === "1") {
+    const resultado = await confirmarDiagnostico(telefono);
+    if (!resultado.ok) {
+      return "Todavía no hay un diagnóstico listo para guardar. Dicta la nota y elige al paciente.";
+    }
+    return "Diagnóstico guardado.";
+  }
+
+  if (conversacion.estado === "revisar" && texto === "2") {
+    await borrarConversacion(telefono);
+    return "Listo. No guardé el diagnóstico.";
+  }
+
   if (conversacion.estado === "identificar_paciente" && conversacion.borrador?.nombre) {
     const pacientes = await buscarPacientes(texto);
     if (pacientes.length === 0) {
-      return "No encontré a ese paciente. Escribe nombre y apellido como aparecen en el expediente.";
+      return "No hay pacientes parecidos.";
     }
     if (pacientes.length > 1) {
       await guardarConversacion({

@@ -1,5 +1,6 @@
 const pool = require("../../dao/dbConnections");
 const { DOCTOR_ROL_ID, phonesMatch, nombreCompleto } = require("./diagnostico");
+const { crearOdontogramaDeDiagnostico } = require("./odontogramaDiagnostico");
 
 const CONVERSATION_MINUTES = 30;
 
@@ -40,21 +41,38 @@ const findDoctorByPhone = async (incomingPhone) => {
 const ACENTOS = "áéíóúüñ";
 const SIN_ACENTOS = "aeiouun";
 
+const consultaPacientes = async (condicion, params) => {
+  const result = await pool.query(
+    `SELECT id, nombre, apellido_paterno, apellido_materno
+     FROM pacientes
+     WHERE ${condicion}
+     ORDER BY apellido_paterno, nombre
+     LIMIT 8`,
+    params
+  );
+  return result.rows;
+};
+
+const coincideNombre = (indiceTexto, indiceAcentos, indiceSin) =>
+  `translate(lower(concat_ws(' ', nombre, apellido_paterno, apellido_materno)), $${indiceAcentos}, $${indiceSin})
+     LIKE '%' || translate(lower($${indiceTexto}), $${indiceAcentos}, $${indiceSin}) || '%'`;
+
 const buscarPacientes = async (texto) => {
   const nombre = String(texto || "").trim();
   if (nombre.length < 2) {
     return [];
   }
-  const result = await pool.query(
-    `SELECT id, nombre, apellido_paterno, apellido_materno
-     FROM pacientes
-     WHERE translate(lower(concat_ws(' ', nombre, apellido_paterno, apellido_materno)), $2, $3)
-       LIKE '%' || translate(lower($1), $2, $3) || '%'
-     ORDER BY apellido_paterno, nombre
-     LIMIT 8`,
-    [nombre, ACENTOS, SIN_ACENTOS]
-  );
-  return result.rows;
+  const exactos = await consultaPacientes(coincideNombre(1, 2, 3), [nombre, ACENTOS, SIN_ACENTOS]);
+  if (exactos.length > 0) {
+    return exactos;
+  }
+
+  const palabras = nombre.split(/\s+/).filter((palabra) => palabra.length >= 2);
+  if (palabras.length === 0) {
+    return [];
+  }
+  const condiciones = palabras.map((_, index) => coincideNombre(index + 3, 1, 2)).join(" OR ");
+  return consultaPacientes(condiciones, [ACENTOS, SIN_ACENTOS, ...palabras]);
 };
 
 const getConversacion = async (telefono) => {
@@ -121,11 +139,16 @@ const confirmarDiagnostico = async (telefono) => {
       return { ok: false, motivo: "incompleto" };
     }
 
+    const odontogramaId = await crearOdontogramaDeDiagnostico(client, {
+      pacienteId: conversacion.paciente_id,
+      nombre: borrador.nombre,
+      piezas: borrador.piezasDentales || [],
+    });
     const guardado = await client.query(
       `INSERT INTO diagnostico_clinico
          (paciente_id, doctor_id, transcripcion, nombre, certeza, piezas_dentales,
-          requiere_revision_pieza, observaciones, origen)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'whatsapp')
+          requiere_revision_pieza, observaciones, origen, odontograma_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'whatsapp', $9)
        RETURNING id`,
       [
         conversacion.paciente_id,
@@ -136,6 +159,7 @@ const confirmarDiagnostico = async (telefono) => {
         borrador.piezasDentales || [],
         Boolean(borrador.requiereRevisionPieza),
         borrador.observaciones || null,
+        odontogramaId,
       ]
     );
     await client.query("DELETE FROM whatsapp_conversacion WHERE telefono = $1", [telefono]);

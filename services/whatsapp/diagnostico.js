@@ -86,9 +86,9 @@ const resumenDiagnostico = (borrador, paciente) => {
 
   lineas.push(
     "",
-    "Responde CONFIRMAR para guardar o CANCELAR para descartar.",
+    "Responde 1 para guardar o 2 para descartar.",
     "Para corregir, escribe de nuevo lo que debe decir la nota.",
-    "Para cambiar de paciente, responde CANCELAR y dicta otra vez."
+    "Para cambiar de paciente, responde 2 y dicta otra vez."
   );
 
   return lineas.join("\n");
