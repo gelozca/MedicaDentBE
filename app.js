@@ -8,6 +8,7 @@ const HttpError = require("./models/http-error");
 const autoRegisterRoutes = require("./routes/autoregister-route");
 const odontogramaRoutes = require("./routes/odontograma-route");
 const laboratorioRoutes = require("./routes/laboratorio-routes");
+const whatsappRoutes = require("./routes/whatsapp-routes");
 
 const fs = require("fs");
 const path = require("path");
@@ -61,6 +62,8 @@ app.use("/registro-paciente", autoRegisterRoutes);
 app.use("/odontograma", odontogramaRoutes);
 
 app.use("/laboratorio", laboratorioRoutes);
+
+app.use("/webhooks", whatsappRoutes);
 
 app.use((req, res, next) => {
   const error = new HttpError("No se encontro la ruta", 404);
