@@ -4,6 +4,7 @@ const SYSTEM = `Eres un asistente que extrae un diagnóstico odontológico de lo
 No actúes como médico. No inventes síntomas, diagnósticos, piezas ni tratamientos.
 No conviertas una posibilidad en diagnóstico definitivo.
 Si no mencionó un diagnóstico, deja "nombre" vacío.
+Si mencionó el nombre del paciente, ponlo en pacienteNombre aunque venga junto a la palabra diagnóstico.
 Usa notación FDI para las piezas. Ejemplos: primer molar inferior derecho = 46, segundo molar inferior derecho = 47, primer molar inferior izquierdo = 36, primer molar superior derecho = 16, primer molar superior izquierdo = 26.
 Si la pieza es ambigua, por ejemplo "el molar inferior", deja piezasDentales vacío y requiereRevisionPieza en true.
 certeza solo puede ser definitivo, presuntivo o no_especificado.

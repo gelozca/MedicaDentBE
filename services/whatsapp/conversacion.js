@@ -37,6 +37,9 @@ const findDoctorByPhone = async (incomingPhone) => {
   return { doctor: ligado.rows[0], motivo: null };
 };
 
+const ACENTOS = "áéíóúüñ";
+const SIN_ACENTOS = "aeiouun";
+
 const buscarPacientes = async (texto) => {
   const nombre = String(texto || "").trim();
   if (nombre.length < 2) {
@@ -45,10 +48,11 @@ const buscarPacientes = async (texto) => {
   const result = await pool.query(
     `SELECT id, nombre, apellido_paterno, apellido_materno
      FROM pacientes
-     WHERE concat_ws(' ', nombre, apellido_paterno, apellido_materno) ILIKE $1
+     WHERE translate(lower(concat_ws(' ', nombre, apellido_paterno, apellido_materno)), $2, $3)
+       LIKE '%' || translate(lower($1), $2, $3) || '%'
      ORDER BY apellido_paterno, nombre
      LIMIT 8`,
-    [`%${nombre}%`]
+    [nombre, ACENTOS, SIN_ACENTOS]
   );
   return result.rows;
 };
