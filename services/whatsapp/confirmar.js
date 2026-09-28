@@ -94,9 +94,9 @@ const guardarRegistrar = async (client, conversacion) => {
     pacienteId: conversacion.paciente_id,
     diagnosticoId,
   });
-  const lineas = ["Diagnóstico guardado."];
-  if (borrador.tratamiento) lineas.push(`Tratamiento pendiente: ${borrador.tratamiento}.`);
-  if (citaFecha) lineas.push(`Control agendado para el ${citaFecha}.`);
+  const lineas = ["✅ Diagnóstico guardado."];
+  if (borrador.tratamiento) lineas.push(`🦷 Tratamiento pendiente: ${borrador.tratamiento}.`);
+  if (citaFecha) lineas.push(`📅 Control agendado para el ${citaFecha}.`);
   return { ok: true, mensaje: lineas.join("\n") };
 };
 
@@ -122,7 +122,7 @@ const guardarAgenda = async (client, conversacion) => {
     pacienteId: conversacion.paciente_id,
     diagnosticoId: conversacion.diagnostico_id,
   });
-  return { ok: true, mensaje: `Cita guardada para el ${cita.rows[0].fecha}.` };
+  return { ok: true, mensaje: `✅ 📅 Cita guardada para el ${cita.rows[0].fecha}.` };
 };
 
 const guardarPresupuesto = async (client, conversacion) => {
@@ -159,8 +159,8 @@ const guardarPresupuesto = async (client, conversacion) => {
     diagnosticoId: diagnosticoId || conversacion.diagnostico_id,
   });
   const aviso = diagnosticoId
-    ? "Presupuesto confirmado y ligado al diagnóstico."
-    : "Presupuesto confirmado. No hay un diagnóstico de esa pieza para ligarlo.";
+    ? "✅ 💰 Presupuesto confirmado y ligado al diagnóstico."
+    : "✅ 💰 Presupuesto confirmado. No hay un diagnóstico de esa pieza para ligarlo.";
   return { ok: true, mensaje: aviso };
 };
 
@@ -198,8 +198,8 @@ const guardarReceta = async (client, conversacion) => {
     diagnosticoId: diagnosticoId || conversacion.diagnostico_id,
   });
   const aviso = diagnosticoId
-    ? "Receta guardada y ligada al diagnóstico."
-    : "Receta guardada en el paciente. No hay un diagnóstico para ligarla.";
+    ? "✅ 💊 Receta guardada y ligada al diagnóstico."
+    : "✅ 💊 Receta guardada en el paciente. No hay un diagnóstico para ligarla.";
   return { ok: true, mensaje: aviso };
 };
 
@@ -220,7 +220,7 @@ const guardarRecordatorio = async (client, conversacion) => {
   });
   return {
     ok: true,
-    mensaje: `Listo. Te recuerdo: ${borrador.texto}. Fecha: ${aviso.rows[0].fecha}.`,
+    mensaje: `✅ 🔔 Listo. Te recuerdo: ${borrador.texto}. Fecha: ${aviso.rows[0].fecha}.`,
   };
 };
 

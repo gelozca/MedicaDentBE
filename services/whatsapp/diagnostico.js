@@ -86,29 +86,29 @@ const resumenDiagnostico = (borrador, paciente) => {
       : "No mencionada";
 
   const lineas = [
-    "Revisa el diagnóstico",
+    "🦷 Revisa el diagnóstico",
     "",
-    `Paciente: ${paciente}`,
-    `Diagnóstico: ${borrador.nombre}`,
-    `Certeza: ${etiquetaCerteza(borrador.certeza)}`,
-    `Piezas: ${piezas}`,
+    `👤 Paciente: ${paciente}`,
+    `📋 Diagnóstico: ${borrador.nombre}`,
+    `🔎 Certeza: ${etiquetaCerteza(borrador.certeza)}`,
+    `🦷 Piezas: ${piezas}`,
   ];
 
   if (borrador.tratamiento) {
-    lineas.push(`Tratamiento: ${borrador.tratamiento}`);
+    lineas.push(`💉 Tratamiento: ${borrador.tratamiento}`);
   }
   if (borrador.seguimientoDias !== null && borrador.seguimientoDias !== undefined) {
-    lineas.push(`Control en ${borrador.seguimientoDias} días`);
+    lineas.push(`📅 Control en ${borrador.seguimientoDias} días`);
   }
   if (borrador.observaciones) {
-    lineas.push(`Observaciones: ${borrador.observaciones}`);
+    lineas.push(`📝 Observaciones: ${borrador.observaciones}`);
   }
 
   lineas.push(
     "",
-    "Responde 1 para guardar o 2 para descartar.",
-    "Para corregir, escribe de nuevo lo que debe decir la nota.",
-    "Para cambiar de paciente, responde 2 y dicta otra vez."
+    "✅ Responde *1* para guardar o *2* para descartar.",
+    "✏️ Para corregir, escribe de nuevo lo que debe decir la nota.",
+    "👤 Para cambiar de paciente, responde *2* y dicta otra vez."
   );
 
   return lineas.join("\n");

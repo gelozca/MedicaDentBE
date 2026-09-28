@@ -14,18 +14,18 @@ const { confirmarBorrador, precioDeConcepto } = require("./confirmar");
 const pool = require("../../dao/dbConnections");
 
 const MENU =
-  "No entendí. Puedes anotar, consultar, agendar, cotizar, recetar o recordar.";
+  "🤔 No entendí. Puedes anotar 📝, consultar 🔎, agendar 📅, cotizar 💰, recetar 💊 o recordar 🔔.";
 
 const mensajeError = (error) => {
-  if (error.code === "config") return "El servicio de voz todavía no está configurado en el servidor.";
-  if (error.code === "empty") return "No se entendió el audio. Dicta la nota otra vez.";
-  if (error.code === "upload") return "No pude recibir el audio. Intenta enviarlo de nuevo.";
-  if (error.code === "invalid") return "No pude interpretar la nota. Dictala de nuevo.";
-  return "No pude procesar la nota. Intenta de nuevo.";
+  if (error.code === "config") return "⚙️ El servicio de voz todavía no está configurado en el servidor.";
+  if (error.code === "empty") return "🎙️ No se entendió el audio. Dicta la nota otra vez.";
+  if (error.code === "upload") return "📎 No pude recibir el audio. Intenta enviarlo de nuevo.";
+  if (error.code === "invalid") return "❓ No pude interpretar la nota. Dictala de nuevo.";
+  return "⚠️ No pude procesar la nota. Intenta de nuevo.";
 };
 
 const listaPacientes = (pacientes) => {
-  const lineas = ["Elige al paciente. Responde con el número:"];
+  const lineas = ["👤 Elige al paciente. Responde con el número:"];
   pacientes.forEach((paciente, index) => {
     const nombre = paciente.apellido_paterno === undefined ? paciente.nombre : etiquetaPaciente(paciente);
     lineas.push(`${index + 1}. ${nombre}`);
@@ -38,8 +38,8 @@ const dinero = (valor) =>
 
 const instrucciones = [
   "",
-  "Responde 1 para guardar o 2 para descartar.",
-  "Para corregir, escribe de nuevo lo que debe decir.",
+  "✅ Responde *1* para guardar o *2* para descartar.",
+  "✏️ Para corregir, escribe de nuevo lo que debe decir.",
 ];
 
 const resumenTurno = (borrador, paciente) => {
@@ -47,31 +47,31 @@ const resumenTurno = (borrador, paciente) => {
     return resumenDiagnostico(borrador, paciente);
   }
   if (borrador.intencion === "agendar") {
-    return [`Revisa la cita`, "", `Paciente: ${paciente}`, `Control en ${borrador.seguimientoDias} días`, borrador.motivo ? `Motivo: ${borrador.motivo}` : "", ...instrucciones]
+    return [`📅 Revisa la cita`, "", `👤 Paciente: ${paciente}`, `🗓️ Control en ${borrador.seguimientoDias} días`, borrador.motivo ? `📌 Motivo: ${borrador.motivo}` : "", ...instrucciones]
       .filter((linea) => linea !== undefined)
       .join("\n");
   }
   if (borrador.intencion === "presupuesto") {
     return [
-      "Revisa el presupuesto",
+      "💰 Revisa el presupuesto",
       "",
-      `Paciente: ${paciente}`,
-      `Concepto: ${borrador.concepto}`,
-      `Pieza: ${borrador.pieza || "No mencionada"}`,
-      `Precio: ${dinero(borrador.precio)}`,
+      `👤 Paciente: ${paciente}`,
+      `🧾 Concepto: ${borrador.concepto}`,
+      `🦷 Pieza: ${borrador.pieza || "No mencionada"}`,
+      `💵 Precio: ${dinero(borrador.precio)}`,
       "Si hay un diagnóstico de esa pieza, se liga al confirmar.",
       ...instrucciones,
     ].join("\n");
   }
   if (borrador.intencion === "receta") {
     const meds = (borrador.medicamentos || []).map(
-      (item) => `- ${item.nombre} ${item.dosis} ${item.frecuencia} ${item.duracion}`.replace(/\s+/g, " ").trim()
+      (item) => `💊 ${item.nombre} ${item.dosis} ${item.frecuencia} ${item.duracion}`.replace(/\s+/g, " ").trim()
     );
-    return ["Revisa la receta", "", `Paciente: ${paciente}`, ...meds, ...instrucciones].join("\n");
+    return ["💊 Revisa la receta", "", `👤 Paciente: ${paciente}`, ...meds, ...instrucciones].join("\n");
   }
   if (borrador.intencion === "recordar") {
     const cuando = borrador.seguimientoDias ? `en ${borrador.seguimientoDias} días` : "hoy";
-    return ["Revisa el recordatorio", "", `Paciente: ${paciente}`, `${borrador.texto} (${cuando})`, ...instrucciones].join("\n");
+    return ["🔔 Revisa el recordatorio", "", `👤 Paciente: ${paciente}`, `📝 ${borrador.texto} (${cuando})`, ...instrucciones].join("\n");
   }
   return MENU;
 };
@@ -87,7 +87,7 @@ const pedirPaciente = async ({ telefono, doctor, borrador }) => {
     diagnosticoId: null,
     borrador,
   });
-  return "¿De qué paciente? Escribe el nombre.";
+  return "👤 ¿De qué paciente? Escribe el nombre.";
 };
 
 const ofrecerLista = async ({ telefono, doctor, borrador, pacientes }) => {
@@ -128,16 +128,16 @@ const textoPendientes = async (pacienteId, etiqueta) => {
     [pacienteId]
   );
   if (tratamientos.rows.length === 0 && citas.rows.length === 0) {
-    return `${etiqueta} no tiene pendientes.`;
+    return `✅ ${etiqueta} no tiene pendientes.`;
   }
-  const lineas = [`Pendientes de ${etiqueta}`];
+  const lineas = [`📋 Pendientes de ${etiqueta}`];
   if (tratamientos.rows.length > 0) {
-    lineas.push("Tratamientos:");
-    tratamientos.rows.forEach((item) => lineas.push(`- ${item.nombre}, pieza ${item.pieza}`));
+    lineas.push("🦷 Tratamientos:");
+    tratamientos.rows.forEach((item) => lineas.push(`• ${item.nombre}, pieza ${item.pieza}`));
   }
   if (citas.rows.length > 0) {
-    lineas.push("Citas:");
-    citas.rows.forEach((item) => lineas.push(`- ${item.fecha}${item.hora ? ` ${item.hora}` : ""} ${item.motivo || ""}`.trim()));
+    lineas.push("📅 Citas:");
+    citas.rows.forEach((item) => lineas.push(`• ${item.fecha}${item.hora ? ` ${item.hora}` : ""} ${item.motivo || ""}`.trim()));
   }
   return lineas.join("\n");
 };
@@ -152,14 +152,14 @@ const textoReceta = async (pacienteId, etiqueta, diagnosticoId) => {
      LIMIT 1`,
     [pacienteId, diagnosticoId || null]
   );
-  if (!receta.rows[0]) return `${etiqueta} no tiene receta.`;
+  if (!receta.rows[0]) return `💊 ${etiqueta} no tiene receta.`;
   const meds = await pool.query(
     "SELECT nombre, dosis, frecuencia, duracion FROM receta_medicamento WHERE receta_id = $1",
     [receta.rows[0].id]
   );
-  const lineas = [`Receta de ${etiqueta}`];
+  const lineas = [`💊 Receta de ${etiqueta}`];
   meds.rows.forEach((item) => {
-    lineas.push(`- ${[item.nombre, item.dosis, item.frecuencia, item.duracion].filter(Boolean).join(", ")}`);
+    lineas.push(`• ${[item.nombre, item.dosis, item.frecuencia, item.duracion].filter(Boolean).join(", ")}`);
   });
   return lineas.join("\n");
 };
@@ -188,7 +188,7 @@ const prepararBorrador = async (turno) => {
   if (turno.intencion === "presupuesto") {
     const precio = await precioDeConcepto(turno.concepto);
     if (!precio) {
-      return { error: `No tengo precio de "${turno.concepto || "ese concepto"}" en el catálogo.` };
+      return { error: `💰 No tengo precio de "${turno.concepto || "ese concepto"}" en el catálogo.` };
     }
     borrador.concepto = precio.nombre;
     borrador.precio = precio.precio;
@@ -200,19 +200,19 @@ const prepararBorrador = async (turno) => {
 const validarTurno = (turno) => {
   if (turno.intencion === "desconocida") return MENU;
   if (turno.intencion === "registrar" && !turno.nombre) {
-    return "No escuché un diagnóstico. Dilo de nuevo, por ejemplo: caries en el 46, presuntiva.";
+    return "🦷 No escuché un diagnóstico. Dilo de nuevo, por ejemplo: caries en el 46, presuntiva.";
   }
   if (turno.intencion === "agendar" && turno.seguimientoDias === null) {
-    return "¿En cuántos días agendo el control?";
+    return "📅 ¿En cuántos días agendo el control?";
   }
   if (turno.intencion === "presupuesto" && !turno.concepto) {
-    return "¿Qué tratamiento cotizo?";
+    return "💰 ¿Qué tratamiento cotizo?";
   }
   if (turno.intencion === "receta" && (!turno.medicamentos || turno.medicamentos.length === 0)) {
-    return "Dicta el medicamento, la dosis, la frecuencia y la duración.";
+    return "💊 Dicta el medicamento, la dosis, la frecuencia y la duración.";
   }
   if (turno.intencion === "recordar" && !turno.texto) {
-    return "¿Qué quieres que te recuerde?";
+    return "🔔 ¿Qué quieres que te recuerde?";
   }
   return null;
 };
@@ -243,7 +243,7 @@ const resolverNombre = async ({ telefono, doctor, borrador, conversacion, nombre
       diagnosticoId: null,
       borrador,
     });
-    return "No hay pacientes parecidos.";
+    return "👤 No hay pacientes parecidos. ¿Otro nombre?";
   }
   if (pacientes.length > 1) {
     return ofrecerLista({ telefono, doctor, borrador, pacientes });
@@ -300,8 +300,8 @@ const tomarRecordatorios = async (doctorId) => {
     [doctorId]
   );
   if (lista.rows.length === 0) return "";
-  const lineas = ["Recordatorios:"];
-  lista.rows.forEach((item) => lineas.push(`- ${item.fecha}: ${item.texto}`));
+  const lineas = ["🔔 Recordatorios:"];
+  lista.rows.forEach((item) => lineas.push(`• ${item.fecha}: ${item.texto}`));
   return `${lineas.join("\n")}\n\n`;
 };
 
@@ -329,10 +329,10 @@ const descartar = async (conversacion) => {
       diagnosticoId: conversacion.diagnostico_id,
       borrador: null,
     });
-    return "Listo. No guardé este borrador.";
+    return "🗑️ Listo. No guardé este borrador.";
   }
   await borrarConversacion(conversacion.telefono);
-  return "Listo. No guardé nada.";
+  return "🗑️ Listo. No guardé nada.";
 };
 
 const handleWhatsapp = async ({ telefono, doctor, body, mediaUrl, mediaType }) => {
@@ -343,7 +343,7 @@ const handleWhatsapp = async ({ telefono, doctor, body, mediaUrl, mediaType }) =
   let contenido = texto;
   if (mediaUrl) {
     if (mediaType && !mediaType.startsWith("audio/")) {
-      return `${avisos}Envía una nota de voz.`;
+      return `${avisos}🎙️ Envía una nota de voz.`;
     }
     const { audioBuffer, contentType } = await downloadMedia(mediaUrl);
     contenido = await speechToText(audioBuffer, contentType);
@@ -352,7 +352,7 @@ const handleWhatsapp = async ({ telefono, doctor, body, mediaUrl, mediaType }) =
   } else if (conversacion?.estado === "revisar" && texto === "1") {
     const resultado = await confirmarBorrador(telefono);
     if (!resultado.ok) {
-      return `${avisos}Todavía no hay nada listo para guardar. Dicta la nota y elige al paciente.`;
+      return `${avisos}⏳ Todavía no hay nada listo para guardar. Dicta la nota y elige al paciente.`;
     }
     return avisos + resultado.mensaje;
   } else if (conversacion?.estado === "revisar" && texto === "2") {
@@ -368,7 +368,7 @@ const handleWhatsapp = async ({ telefono, doctor, body, mediaUrl, mediaType }) =
   }
 
   if (!contenido) {
-    return `${avisos}Envía una nota de voz con lo que quieres registrar.`;
+    return `${avisos}🎙️ Envía una nota de voz con lo que quieres registrar.`;
   }
 
   const turno = await clasificarIntencion(contenido);
