@@ -6,7 +6,7 @@ const piezasValidas = (piezas) =>
     .map((pieza) => String(pieza).trim())
     .filter((pieza) => /^\d{2}$/.test(pieza));
 
-const crearOdontogramaDeDiagnostico = async (client, { pacienteId, nombre, piezas }) => {
+const crearOdontogramaDeDiagnostico = async (client, { pacienteId, nombre, piezas, tratamiento }) => {
   const creado = await client.query(
     `INSERT INTO odontograma (paciente_id, fecha_odontograma, tipo)
      VALUES ($1, NOW(), 'diagnostico')
@@ -18,12 +18,13 @@ const crearOdontogramaDeDiagnostico = async (client, { pacienteId, nombre, pieza
   if (lista.length > 0) {
     const color = colorDePieza(nombre);
     const titulo = String(nombre || "Diagnóstico").slice(0, 100);
+    const plan = String(tratamiento || "").slice(0, 100);
     for (const pieza of lista) {
       await client.query(
         `INSERT INTO odontograma_diente
            (odontograma_id, num_diente, diagnostico, tratamiento, st0, st1, st2, st3, st4)
-         VALUES ($1, $2, $3, '', $4, $4, $4, $4, $4)`,
-        [odontogramaId, pieza, titulo, color]
+         VALUES ($1, $2, $3, $4, $5, $5, $5, $5, $5)`,
+        [odontogramaId, pieza, titulo, plan, color]
       );
     }
   }

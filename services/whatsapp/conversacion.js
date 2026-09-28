@@ -1,7 +1,5 @@
 const pool = require("../../dao/dbConnections");
 const { DOCTOR_ROL_ID, phonesMatch, nombreCompleto } = require("./diagnostico");
-const { crearOdontogramaDeDiagnostico } = require("./odontogramaDiagnostico");
-
 const CONVERSATION_MINUTES = 30;
 
 const findDoctorByPhone = async (incomingPhone) => {
@@ -84,22 +82,45 @@ const getConversacion = async (telefono) => {
   return result.rows[0] || null;
 };
 
-const guardarConversacion = async ({ telefono, doctorId, estado, pacienteId, borrador }) => {
+const guardarConversacion = async ({ telefono, doctorId, estado, pacienteId, diagnosticoId, borrador }) => {
   const result = await pool.query(
     `INSERT INTO whatsapp_conversacion
-       (telefono, doctor_id, estado, paciente_id, borrador, expira_en, updated_at)
-     VALUES ($1, $2, $3, $4, $5::jsonb, NOW() + make_interval(mins => $6), NOW())
+       (telefono, doctor_id, estado, paciente_id, diagnostico_id, borrador, expira_en, updated_at)
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb, NOW() + make_interval(mins => $7), NOW())
      ON CONFLICT (telefono) DO UPDATE SET
        doctor_id = EXCLUDED.doctor_id,
        estado = EXCLUDED.estado,
        paciente_id = EXCLUDED.paciente_id,
+       diagnostico_id = EXCLUDED.diagnostico_id,
        borrador = EXCLUDED.borrador,
        expira_en = EXCLUDED.expira_en,
        updated_at = NOW()
      RETURNING *`,
-    [telefono, doctorId, estado, pacienteId || null, borrador ? JSON.stringify(borrador) : null, CONVERSATION_MINUTES]
+    [
+      telefono,
+      doctorId,
+      estado,
+      pacienteId || null,
+      diagnosticoId || null,
+      borrador ? JSON.stringify(borrador) : null,
+      CONVERSATION_MINUTES,
+    ]
   );
   return result.rows[0];
+};
+
+const dejarContexto = async (client, { telefono, pacienteId, diagnosticoId }) => {
+  await client.query(
+    `UPDATE whatsapp_conversacion
+     SET estado = 'en_consulta',
+         paciente_id = $2,
+         diagnostico_id = $3,
+         borrador = NULL,
+         expira_en = NOW() + make_interval(mins => $4),
+         updated_at = NOW()
+     WHERE telefono = $1`,
+    [telefono, pacienteId || null, diagnosticoId || null, CONVERSATION_MINUTES]
+  );
 };
 
 const borrarConversacion = async (telefono) => {
@@ -117,62 +138,6 @@ const etiquetaPorId = async (pacienteId) => {
   return nombreCompleto(result.rows[0]);
 };
 
-const confirmarDiagnostico = async (telefono) => {
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-    const actual = await client.query(
-      `SELECT * FROM whatsapp_conversacion
-       WHERE telefono = $1 AND estado = 'revisar' AND expira_en > NOW()
-       FOR UPDATE`,
-      [telefono]
-    );
-    const conversacion = actual.rows[0];
-    if (!conversacion) {
-      await client.query("ROLLBACK");
-      return { ok: false, motivo: "sin_borrador" };
-    }
-
-    const borrador = conversacion.borrador || {};
-    if (!conversacion.paciente_id || !borrador.nombre) {
-      await client.query("ROLLBACK");
-      return { ok: false, motivo: "incompleto" };
-    }
-
-    const odontogramaId = await crearOdontogramaDeDiagnostico(client, {
-      pacienteId: conversacion.paciente_id,
-      nombre: borrador.nombre,
-      piezas: borrador.piezasDentales || [],
-    });
-    const guardado = await client.query(
-      `INSERT INTO diagnostico_clinico
-         (paciente_id, doctor_id, transcripcion, nombre, certeza, piezas_dentales,
-          requiere_revision_pieza, observaciones, origen, odontograma_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'whatsapp', $9)
-       RETURNING id`,
-      [
-        conversacion.paciente_id,
-        conversacion.doctor_id,
-        borrador.transcripcion || "",
-        borrador.nombre,
-        borrador.certeza || "no_especificado",
-        borrador.piezasDentales || [],
-        Boolean(borrador.requiereRevisionPieza),
-        borrador.observaciones || null,
-        odontogramaId,
-      ]
-    );
-    await client.query("DELETE FROM whatsapp_conversacion WHERE telefono = $1", [telefono]);
-    await client.query("COMMIT");
-    return { ok: true, id: guardado.rows[0].id };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
-  }
-};
-
 const etiquetaPaciente = (paciente) => nombreCompleto(paciente);
 
 module.exports = {
@@ -180,8 +145,8 @@ module.exports = {
   buscarPacientes,
   getConversacion,
   guardarConversacion,
+  dejarContexto,
   borrarConversacion,
-  confirmarDiagnostico,
   etiquetaPaciente,
   etiquetaPorId,
 };

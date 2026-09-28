@@ -8,8 +8,10 @@ Si mencionó el nombre del paciente, ponlo en pacienteNombre aunque venga junto 
 Usa notación FDI para las piezas. Ejemplos: primer molar inferior derecho = 46, segundo molar inferior derecho = 47, primer molar inferior izquierdo = 36, primer molar superior derecho = 16, primer molar superior izquierdo = 26.
 Si la pieza es ambigua, por ejemplo "el molar inferior", deja piezasDentales vacío y requiereRevisionPieza en true.
 certeza solo puede ser definitivo, presuntivo o no_especificado.
+Si mencionó un tratamiento o plan, ponlo en tratamiento. Si no lo dijo, déjalo vacío.
+Si pidió un control o revisión en N días, pon ese número en seguimientoDias. "mañana" es 1. Si no lo dijo, null.
 Responde únicamente con JSON:
-{"pacienteNombre":"","nombre":"","certeza":"no_especificado","piezasDentales":[],"requiereRevisionPieza":false,"observaciones":""}`;
+{"pacienteNombre":"","nombre":"","certeza":"no_especificado","piezasDentales":[],"requiereRevisionPieza":false,"observaciones":"","tratamiento":"","seguimientoDias":null}`;
 
 const interpretDiagnosis = async (transcription) => {
   const apiKey = process.env.OPENAI_API_KEY || process.env.SPEECH_TO_TEXT_API_KEY;

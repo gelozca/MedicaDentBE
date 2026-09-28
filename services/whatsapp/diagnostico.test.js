@@ -52,6 +52,22 @@ test("extrae el diagnóstico dicho y no inventa pieza ambigua", () => {
   assert.equal(sinDiagnostico.nombre, "");
 });
 
+test("no inventa tratamiento ni días si no vienen en el JSON", () => {
+  const nota = parseDiagnosis(`{
+    "nombre": "Caries",
+    "certeza": "presuntivo",
+    "piezasDentales": ["46"],
+    "tratamiento": "Endodoncia",
+    "seguimientoDias": 7
+  }`);
+  assert.equal(nota.tratamiento, "Endodoncia");
+  assert.equal(nota.seguimientoDias, 7);
+
+  const vacio = parseDiagnosis(`{"nombre":"Caries","certeza":"definitivo","piezasDentales":["11"]}`);
+  assert.equal(vacio.tratamiento, "");
+  assert.equal(vacio.seguimientoDias, null);
+});
+
 test("rechaza JSON inválido y piezas que no son FDI", () => {
   assert.equal(parseDiagnosis("no es json"), null);
   const piezaInventada = parseDiagnosis(`{

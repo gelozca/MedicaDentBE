@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "app.js",
   "scripts": {
-    "test": "node --test services/whatsapp/diagnostico.test.js",
+    "test": "node --test services/whatsapp/*.test.js",
     "start": "node app.js",
     "dev": "nodemon app.js"
   },

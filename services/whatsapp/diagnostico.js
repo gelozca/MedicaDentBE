@@ -55,8 +55,22 @@ const parseDiagnosis = (text) => {
     piezasDentales: piezas,
     requiereRevisionPieza: piezas.length === 0 ? Boolean(data.requiereRevisionPieza) : false,
     observaciones: String(data.observaciones || "").trim(),
+    tratamiento: String(data.tratamiento || "").trim(),
+    seguimientoDias: numeroDias(data.seguimientoDias),
   };
 };
+
+const numeroDias = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const numero = Number(value);
+  if (!Number.isInteger(numero) || numero < 0 || numero > 365) return null;
+  return numero;
+};
+
+const piezasFdi = (value) =>
+  (Array.isArray(value) ? value : [])
+    .map((pieza) => String(pieza).trim())
+    .filter((pieza) => /^\d{2}$/.test(pieza));
 
 const etiquetaCerteza = (certeza) => {
   if (certeza === "definitivo") return "Definitivo";
@@ -80,6 +94,12 @@ const resumenDiagnostico = (borrador, paciente) => {
     `Piezas: ${piezas}`,
   ];
 
+  if (borrador.tratamiento) {
+    lineas.push(`Tratamiento: ${borrador.tratamiento}`);
+  }
+  if (borrador.seguimientoDias !== null && borrador.seguimientoDias !== undefined) {
+    lineas.push(`Control en ${borrador.seguimientoDias} días`);
+  }
   if (borrador.observaciones) {
     lineas.push(`Observaciones: ${borrador.observaciones}`);
   }
@@ -100,5 +120,7 @@ module.exports = {
   phonesMatch,
   nombreCompleto,
   parseDiagnosis,
+  numeroDias,
+  piezasFdi,
   resumenDiagnostico,
 };

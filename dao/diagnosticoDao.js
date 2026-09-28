@@ -56,7 +56,61 @@ const getDiagnosticosByPacienteIdDao = async (pacienteId) => {
       dc.transcripcion,
       dc.observaciones,
       dc.odontograma_id,
-      trim(concat_ws(' ', d.nombre, d.apellido_paterno, d.apellido_materno)) AS medico
+      trim(concat_ws(' ', d.nombre, d.apellido_paterno, d.apellido_materno)) AS medico,
+      COALESCE((
+        SELECT json_agg(json_build_object(
+          'id', t.id, 'pieza', t.pieza, 'nombre', t.nombre, 'estado', t.estado
+        ))
+        FROM tratamiento t WHERE t.diagnostico_id = dc.id
+      ), '[]'::json) AS tratamientos,
+      COALESCE((
+        SELECT json_agg(json_build_object(
+          'id', c.id,
+          'fecha', to_char(c.fecha, 'YYYY-MM-DD'),
+          'hora', to_char(c.hora, 'HH24:MI'),
+          'motivo', c.motivo,
+          'estado', c.estado
+        ) ORDER BY c.fecha)
+        FROM cita c
+        WHERE c.diagnostico_id = dc.id AND c.estado = 'programada'
+      ), '[]'::json) AS citas,
+      (
+        SELECT json_build_object(
+          'id', p.id,
+          'estado', p.estado,
+          'total', p.total::float8,
+          'pieza', p.pieza,
+          'detalles', COALESCE((
+            SELECT json_agg(json_build_object(
+              'concepto', pd.concepto,
+              'precio', pd.precio::float8,
+              'cantidad', pd.cantidad,
+              'pieza', pd.pieza
+            ))
+            FROM presupuesto_detalle pd WHERE pd.presupuesto_id = p.id
+          ), '[]'::json)
+        )
+        FROM presupuesto p
+        WHERE p.diagnostico_id = dc.id AND p.estado = 'confirmado'
+        ORDER BY p.created_at DESC
+        LIMIT 1
+      ) AS presupuesto,
+      (
+        SELECT json_build_object(
+          'id', r.id,
+          'texto', r.texto,
+          'medicamentos', COALESCE((
+            SELECT json_agg(json_build_object(
+              'nombre', m.nombre, 'dosis', m.dosis, 'frecuencia', m.frecuencia, 'duracion', m.duracion
+            ))
+            FROM receta_medicamento m WHERE m.receta_id = r.id
+          ), '[]'::json)
+        )
+        FROM receta r
+        WHERE r.diagnostico_id = dc.id
+        ORDER BY r.created_at DESC
+        LIMIT 1
+      ) AS receta
     FROM diagnostico_clinico dc
     JOIN doctores d ON d.id = dc.doctor_id
     WHERE dc.paciente_id = $1
